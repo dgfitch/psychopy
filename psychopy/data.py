@@ -305,17 +305,22 @@ class ExperimentHandler(object):
 
             fileCollisionMethod: Collision method passed to :func:`~psychopy.tools.fileerrortools.handleFileCollision`
         """
-        # Store the current state of self.savePickle for later use:
-        # We are going to set self.savePickle to False before saving,
-        # so PsychoPy won't try to save it again after loading from
-        # disk.
+        # Store the current state of self.savePickle and self.saveWideText
+        # for later use:
+        # We are going to set both to False before saving,
+        # so PsychoPy won't try to save again after loading the pickled
+        # .psydat file from disk.
         #
-        # After saving, the initial state of self.savePickle is restored.
+        # After saving, the initial state of self.savePickle and
+        # self.saveWideText is restored.
         #
         # See https://groups.google.com/d/msg/psychopy-dev/Z4m_UX88q8U/UGuh1eeyjMEJ
         # for details.
         savePickle = self.savePickle
+        saveWideText = self.saveWideText
+
         self.savePickle = False
+        self.saveWideText = False
 
         #otherwise use default location
         if not fileName.endswith('.psydat'):
@@ -327,6 +332,7 @@ class ExperimentHandler(object):
         f.close()
         logging.info('saved data to %s' % f.name)
         self.savePickle = savePickle
+        self.saveWideText = saveWideText
 
     def abort(self):
         """Inform the ExperimentHandler that the run was aborted.
@@ -1187,7 +1193,9 @@ class TrialHandler(_BaseTrialHandler):
         header.extend(self.data.dataTypes)
         # get the extra 'wide' parameter names into the header line:
         header.insert(0,"TrialNumber")
-        if (self.extraInfo != None):
+        # this is wide format, so we want fixed information
+        # (e.g. subject ID, date, etc) repeated every line if it exists:
+        if self.extraInfo is not None:
             for key in self.extraInfo:
                 header.insert(0, key)
         df = DataFrame(columns = header)
@@ -1210,11 +1218,7 @@ class TrialHandler(_BaseTrialHandler):
                 repThisType=repsPerType[trialTypeIndex]#what repeat are we on for this trial type?
 
                 # create a dictionary representing each trial:
-                # this is wide format, so we want fixed information (e.g. subject ID, date, etc) repeated every line if it exists:
-                if (self.extraInfo != None):
-                    nextEntry = self.extraInfo.copy()
-                else:
-                    nextEntry = {}
+                nextEntry = {}
 
                 # add a trial number so the original order of the data can always be recovered if sorted during analysis:
                 trialCount += 1
@@ -1226,6 +1230,8 @@ class TrialHandler(_BaseTrialHandler):
                         nextEntry[parameterName] = self.trialList[trialTypeIndex][parameterName]
                     elif parameterName in self.data:
                         nextEntry[parameterName] = self.data[parameterName][trialTypeIndex][repThisType]
+                    elif self.extraInfo is not None and parameterName in self.extraInfo:
+                        nextEntry[parameterName] = self.extraInfo[parameterName]
                     else: # allow a null value if this parameter wasn't explicitly stored on this trial:
                         if parameterName == "TrialNumber":
                             nextEntry[parameterName] = trialCount
