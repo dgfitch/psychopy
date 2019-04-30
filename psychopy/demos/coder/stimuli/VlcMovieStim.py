@@ -35,8 +35,6 @@ keystext += "  #     '<': Seek Backward 1 Second.\n"
 keystext += "  #     '-': Decrease Movie Volume.\n"
 keystext += "  #     '+': Increase Movie Volume."
 
-text = visual.TextStim(win, keystext, pos=(0, -250), units = 'pix')
-
 # Create your movie stim.
 mov = visual.VlcMovieStim(win, videopath,
     size=640,
@@ -44,6 +42,8 @@ mov = visual.VlcMovieStim(win, videopath,
     pos=[0, 100],
     flipVert=False, flipHoriz=False,
     loop=False)
+
+text = visual.TextStim(win, keystext, pos=(0, -250), units = 'pix')
 
 # Start the movie stim by preparing it to play
 shouldflip = mov.play()
